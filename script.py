@@ -1,6 +1,4 @@
 data_file = r"saida_rib.20181201.0800.txt"
-
-print(data_file)
 processed_data = []
 asn = []
 
@@ -26,13 +24,17 @@ try:
             return None
         elif owner_asn == line[1][-2]:
             # "Prepending"
-            return None
+            for element in reversed(line[1]):
+                if owner_asn != element:
+                    line[1].index(element)
+                    print(line[1][line[1].index(element)])
+                    return [line[0], owner_asn, line[1][line[1].index(element)]]
         return [line[0], owner_asn, line[1][-2]]
 
     def neighbors(data):
         neighbors_dict = {}
         for route in data:
-            owner = route[1]
+            owner = "Owner: " + route[1]
             prefix = route[0]
             value = route[2]
 
