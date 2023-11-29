@@ -71,6 +71,7 @@ try:
                 seen_asns = set()
                 repeated_asn_prefix = []
 
+                # TODO: list in list
                 # Verificar ASN repetidos
                 for asn in values:
                     if asn in seen_asns:
@@ -84,7 +85,7 @@ try:
                 ) * 100
 
                 print(
-                    f"  Prefixo: {prefix} - {len(values)} ASN Use: {unique_percentage:.2f}% |"
+                    f"  Prefixo: {prefix} - {len(values)} ASN Use: {unique_percentage:.1f}% |"
                 )
 
     def main():
@@ -92,8 +93,8 @@ try:
         for route in processed_data:
             asn.append(check_valid_asn(route))
         valid_asn = list(filter(None, asn))
-        show_info(neighbors(valid_asn))
-        # print(json.dumps(neighbors(valid_asn), indent=2))
+        # show_info(neighbors(valid_asn))
+        print(json.dumps(neighbors(valid_asn), indent=2))
         pass
 
     main()
