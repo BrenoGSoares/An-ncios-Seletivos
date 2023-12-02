@@ -49,52 +49,48 @@ try:
 
         return neighbors_dict
 
-    def show_info(data):
-        for owner, inner_dict in data.items():
-            neighbors = len([asn for values in inner_dict.values() for asn in values])
-            unique_neighbors = len(
-                set.union(*[set(values) for values in inner_dict.values()])
-            )
-            print(
-                f"Owner: {owner} | Neighbors {neighbors} | Unique Neighbors: {unique_neighbors}"
-            )
+    def prefix_asn(data):
+        # 0 --> Not Using
+        # 1 --> Probably Using
+        # 2 --> very Likely Using
+        if len(data) == 1:
+            return 0
+        else:
+            temporary_result = 1
+            for i in range(len(data) - 1):
+                if sorted(data[i]) == sorted(data[i + 1]):
+                    temporary_result = 0
+                else:
+                    temporary_result = 1
+                    break
+            return temporary_result
 
-            # asn_list = []
-            # repeated_asn = []
-            # for prefix, values in inner_dict.items():
-            #     for element in values:
-            #         if element in asn_list:
-            #             repeated_asn.append(element)
-            #         asn_list.append(element)
+    def show_info(data):
+        data_results = []
+        for owner, inner_dict in data.items():
+            set_seen_asns = []
 
             for prefix, values in inner_dict.items():
                 seen_asns = set()
-                repeated_asn_prefix = []
 
-                # TODO: list in list
                 # Verificar ASN repetidos
                 for asn in values:
-                    if asn in seen_asns:
-                        repeated_asn_prefix.append(asn)
-
-                    else:
+                    if not asn in seen_asns:
                         seen_asns.add(asn)
 
-                unique_percentage = (
-                    (len(values) - len(repeated_asn_prefix)) / unique_neighbors
-                ) * 100
+                seen_asns = list(seen_asns)
+                set_seen_asns.append(seen_asns)
 
-                print(
-                    f"  Prefixo: {prefix} - {len(values)} ASN Use: {unique_percentage:.1f}% |"
-                )
+            data_results.append(prefix_asn(set_seen_asns))
+        print(data_results)
 
     def main():
         asn = []
         for route in processed_data:
             asn.append(check_valid_asn(route))
         valid_asn = list(filter(None, asn))
-        # show_info(neighbors(valid_asn))
-        print(json.dumps(neighbors(valid_asn), indent=2))
+        show_info(neighbors(valid_asn))
+        # print(json.dumps(neighbors(valid_asn), indent=2))
         pass
 
     main()
