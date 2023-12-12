@@ -1,6 +1,7 @@
-from collections import Counter
+from collections import Counter, defaultdict
 import json
 
+# data_file = r"rib.20181201.0800..txt"
 data_file = r"saida_rib.20181201.0800.txt"
 processed_data = []
 
@@ -49,21 +50,50 @@ try:
 
         return neighbors_dict
 
+    def lists_equal(lst1, lst2):
+        return set(lst1) == set(lst2)
+
     def prefix_asn(data):
         # 0 --> Not Using
         # 1 --> Probably Using
-        # 2 --> very Likely Using
+        # 2 --> Very Likely Using
         if len(data) == 1:
             return 0
-        else:
+        result = []
+        for i in range(len(data) - 1):
             temporary_result = 1
-            for i in range(len(data) - 1):
-                if sorted(data[i]) == sorted(data[i + 1]):
+            if lists_equal(data[i], data[i + 1]):
+                if temporary_result != 2:
                     temporary_result = 0
-                else:
-                    temporary_result = 1
-                    break
-            return temporary_result
+            else:
+                temporary_result = 2
+
+                element_count = defaultdict(int)
+
+                # Iterando sobre todas as sublistas e elementos para contar quantos prefixos cada vizinho consegue ver
+                for sublist in data:
+                    for element in sublist:
+                        element_count[element] += 1
+
+                # Convertendo o dicionário de contagem para uma lista de listas
+                result = [[key, value] for key, value in element_count.items()]
+
+        # Soma a quantidade de prefixos que cada vizinho ve
+        # Ex [1, 10] --> 10 vixinhos observam um único prefixo
+        # Ex [4, 1] --> 1 vizinho observa 4 prefixos
+        if result:
+            number = []
+            contagem = Counter(sublista[1] for sublista in result)
+            for value, frequency in contagem.items():
+                number.append([value, frequency])
+            # Se o maior numero de vizinhos tiver sendo anunciado para apenas 1 ou 2 prefixos assumo que muito provavelmente está usando ASN
+            repeat_neighbors = max(number, key=lambda x: x[1])
+            if repeat_neighbors[0] < 2:
+                temporary_result = 2
+            else:
+                temporary_result = 1
+
+        return temporary_result
 
     def show_info(data):
         data_results = []
@@ -80,7 +110,6 @@ try:
 
                 seen_asns = list(seen_asns)
                 set_seen_asns.append(seen_asns)
-
             data_results.append(prefix_asn(set_seen_asns))
         print(data_results)
 
