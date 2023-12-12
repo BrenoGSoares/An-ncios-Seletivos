@@ -1,5 +1,7 @@
 from collections import Counter, defaultdict
+import matplotlib.pyplot as plt
 import json
+import re
 
 # data_file = r"rib.20181201.0800..txt"
 data_file = r"saida_rib.20181201.0800.txt"
@@ -59,6 +61,7 @@ try:
         # 2 --> Very Likely Using
         if len(data) == 1:
             return 0
+
         result = []
         for i in range(len(data) - 1):
             temporary_result = 1
@@ -88,7 +91,7 @@ try:
                 number.append([value, frequency])
             # Se o maior numero de vizinhos tiver sendo anunciado para apenas 1 ou 2 prefixos assumo que muito provavelmente está usando ASN
             repeat_neighbors = max(number, key=lambda x: x[1])
-            if repeat_neighbors[0] < 2:
+            if repeat_neighbors[0] < 2 and len(data) > 2:
                 temporary_result = 2
             else:
                 temporary_result = 1
@@ -111,14 +114,43 @@ try:
                 seen_asns = list(seen_asns)
                 set_seen_asns.append(seen_asns)
             data_results.append(prefix_asn(set_seen_asns))
-        print(data_results)
+        return data_results
+
+    def plot_graph(data_ipv4, data_ipv6):
+        contagem_ipv4 = [data_ipv4.count(0), data_ipv4.count(1), data_ipv4.count(2)]
+        contagem_ipv6 = [data_ipv6.count(0), data_ipv6.count(1), data_ipv6.count(2)]
+        fig, axs = plt.subplots(1, 2, figsize=(12, 6), sharey=True)
+        rotulos = ["Not Using", "Probably Using", "Very Likely Using"]
+        bar_labels = ["red", "blue", "orange"]
+        axs[0].bar(rotulos, contagem_ipv4, color=bar_labels)
+        axs[1].bar(rotulos, contagem_ipv6, color=bar_labels)
+        # axs[0].bar_label(data_ipv4, size=10, label_type="edge")
+
+        # fig.("Inferencias")
+        fig.suptitle("Uso dos ASNs")
+        axs[0].set_ylabel("Quantidade")
+        axs[1].set_ylabel("Quantidade")
+        axs[0].legend(title="Probabilidade de Uso: IPv4")
+        axs[1].legend(title="Probabilidade de Uso: IPv6")
+
+        plt.show()
 
     def main():
-        asn = []
+        asn_ipv4 = []
+        asn_ipv6 = []
+
+        pattern = "^[A-Za-z0-9:/]*$"
         for route in processed_data:
-            asn.append(check_valid_asn(route))
-        valid_asn = list(filter(None, asn))
-        show_info(neighbors(valid_asn))
+            if bool(re.match(pattern, route[0])):
+                asn_ipv6.append(check_valid_asn(route))
+            else:
+                asn_ipv4.append(check_valid_asn(route))
+        valid_asn_ipv4 = list(filter(None, asn_ipv4))
+        valid_asn_ipv6 = list(filter(None, asn_ipv6))
+        plot_graph(
+            show_info(neighbors(valid_asn_ipv4)), show_info(neighbors(valid_asn_ipv6))
+        )
+
         # print(json.dumps(neighbors(valid_asn), indent=2))
         pass
 
