@@ -19,8 +19,16 @@ try:
             except IndexError:
                 print(f"Error processing line: {line}. list of index.")
 
-    # TODO: check the difference between ipv4 and ipv6
-    def check_valid_asn(line, threshold=80):
+    # check if its ipv4 or ipv6
+    def check_ipv4_or_ipv6(prefix):
+        if "." in prefix:
+            return "IPv4"
+        elif ":" in prefix:
+            return "IPv6"
+        else:
+            return "Unknown"
+
+    def check_valid_asn(line):
         owner_asn = line[1][-1]
         if len(line[1]) == 1:
             # owner
@@ -31,67 +39,79 @@ try:
                 if owner_asn != element:
                     line[1].index(element)
                     return [line[0], owner_asn, line[1][line[1].index(element)]]
-        
-        # adding selective ads logic 
-        unique_percentage = (
-            (len(line[1]) - len(set(line[1]))) / len(set(line[1]))
-        ) * 100
-        if unique_percentage < threshold:
-            return [line[0], owner_asn, "Selective Advertisement"]
-        else:
-            return [line[0], owner_asn, "Non-Selective Advertisement"]
+        return [line[0], owner_asn, line[1][-2]]
 
     def neighbors(data):
-        neighbors_dict = {}
+        neighbors_dict = {"IPv4": {}, "IPv6": {}}
         for route in data:
             prefix = route[0]
             owner = route[1]
             value = route[2]
 
-            if owner not in neighbors_dict:
-                neighbors_dict[owner] = {}
+            ip_type = check_ipv4_or_ipv6(prefix)
 
-            if prefix not in neighbors_dict[owner]:
-                neighbors_dict[owner][prefix] = []
+            if owner not in neighbors_dict[ip_type]:
+                neighbors_dict[ip_type][owner] = {}
 
-            neighbors_dict[owner][prefix].append(value)
+            if prefix not in neighbors_dict[ip_type][owner]:
+                neighbors_dict[ip_type][owner][prefix] = []
+
+            neighbors_dict[ip_type][owner][prefix].append(value)
 
         return neighbors_dict
 
-    # generating graphs with matplotlib 
     def show_info(data):
-        for owner, inner_dict in data.items():
-            neighbors = len([asn for values in inner_dict.values() for asn in values])
-            unique_neighbors = len(
-                set.union(*[set(values) for values in inner_dict.values()])
-            )
-            print(
-                f"Owner: {owner} | Neighbors {neighbors} | Unique Neighbors: {unique_neighbors}"
-            )
+        for ip_type, ip_type_dict in data.items():
+            print(f"--- {ip_type} ---")
+            for owner, inner_dict in ip_type_dict.items():
+                neighbors = len([asn for values in inner_dict.values() for asn in values])
+                unique_neighbors = len(
+                    set.union(*[set(values) for values in inner_dict.values()])
+                )
+                print(
+                    f"Owner: {owner} | Neighbors {neighbors} | Unique Neighbors: {unique_neighbors}"
+                )
 
-            unique_percentages = [
-                (len(values) - len(set(values))) / len(set(values)) * 100
-                for values in inner_dict.values()
-            ]
+                percentages = []
 
-            # bar chart
-            plt.bar(inner_dict.keys(), unique_percentages, label=f"Owner: {owner}")
+                for prefix, values in inner_dict.items():
+                    seen_asns = set()
+                    repeated_asn_prefix = []
 
-            # display labels and title
-            plt.xlabel("Prefix")
-            plt.ylabel("Unique Neighbor Percentage")
-            plt.title(f"Unique Neighbor Percentage for Owner: {owner}")
-            plt.legend()
-            plt.show()
+                    for asn in values:
+                        if asn in seen_asns:
+                            repeated_asn_prefix.append(asn)
+                        else:
+                            seen_asns.add(asn)
 
-    # adjustment of the Main Function
-    def main(threshold=80):
+                    unique_percentage = (
+                        (len(values) - len(repeated_asn_prefix)) / unique_neighbors
+                    ) * 100
+
+                    percentages.append(unique_percentage)
+
+                    print(
+                        f"  Prefix: {prefix} - {len(values)} ASN Use: {unique_percentage:.2f}% |"
+                    )
+
+                # create a bar chart for each ASN owner
+                plt.bar(inner_dict.keys(), percentages, label=f"Owner: {owner}")
+
+                # add labels and title to the chart
+                plt.xlabel("Prefixo")
+                plt.ylabel("Porcentagem de Vizinhos Únicos")
+                plt.title(f"Porcentagem de Vizinhos Únicos para Owner: {owner}")
+                plt.legend()
+                plt.show()
+
+    def main():
         asn = []
         for route in processed_data:
-            asn.append(check_valid_asn(route, threshold))
+            asn.append(check_valid_asn(route))
         valid_asn = list(filter(None, asn))
-        neighbor_data = neighbors(valid_asn)
-        show_info(neighbor_data)
+        show_info(neighbors(valid_asn))
+        # print(json.dumps(neighbors(valid_asn), indent=2))
+        pass
 
 except FileNotFoundError:
     print(f"Error: File '{data_file}' not found.")
