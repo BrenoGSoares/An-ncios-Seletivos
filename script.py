@@ -119,14 +119,21 @@ try:
     def plot_graph(data_ipv4, data_ipv6):
         contagem_ipv4 = [data_ipv4.count(0), data_ipv4.count(1), data_ipv4.count(2)]
         contagem_ipv6 = [data_ipv6.count(0), data_ipv6.count(1), data_ipv6.count(2)]
+
         fig, axs = plt.subplots(1, 2, figsize=(12, 6), sharey=True)
         rotulos = ["Not Using", "Probably Using", "Very Likely Using"]
         bar_labels = ["red", "blue", "orange"]
-        axs[0].bar(rotulos, contagem_ipv4, color=bar_labels)
-        axs[1].bar(rotulos, contagem_ipv6, color=bar_labels)
-        # axs[0].bar_label(data_ipv4, size=10, label_type="edge")
 
-        # fig.("Inferencias")
+        # Plotting IPv4 bars
+        for i, value in enumerate(contagem_ipv4):
+            axs[0].bar(rotulos[i], value, color=bar_labels[i])
+            axs[0].text(rotulos[i], value + 0.05, str(value), ha="center", va="bottom")
+
+        # Plotting IPv6 bars
+        for i, value in enumerate(contagem_ipv6):
+            axs[1].bar(rotulos[i], value, color=bar_labels[i])
+            axs[1].text(rotulos[i], value + 0.05, str(value), ha="center", va="bottom")
+
         fig.suptitle("Uso dos ASNs")
         axs[0].set_ylabel("Quantidade")
         axs[1].set_ylabel("Quantidade")
