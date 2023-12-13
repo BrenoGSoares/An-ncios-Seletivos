@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 import json
 import re
 
-# data_file = r"rib.20181201.0800..txt"
-data_file = r"saida_rib.20181201.0800.txt"
+data_file = r"rib.20181201.0800..txt"
+# data_file = r"saida_rib.20181201.0800.txt"
 processed_data = []
 
 
@@ -63,10 +63,10 @@ try:
             return 0
 
         result = []
+        temporary_result = 0
         for i in range(len(data) - 1):
-            temporary_result = 1
             if lists_equal(data[i], data[i + 1]):
-                if temporary_result != 2:
+                if temporary_result == 0:
                     temporary_result = 0
             else:
                 temporary_result = 2
